@@ -229,6 +229,9 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_WRITE_COLR            (1 << 15)
 #define FF_MOV_FLAG_WRITE_GAMA            (1 << 16)
 
+#define FF_MOV_FLAG_DASH_INITSEGMENT      (1 << 20)
+#define FF_MOV_FLAG_DASH_MEDIASEGMENT     (1 << 21)
+
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
 int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index);
