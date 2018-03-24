@@ -50,6 +50,9 @@
 #include "rtpenc.h"
 #include "mov_chan.h"
 
+
+
+
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -97,11 +100,27 @@ static const AVClass flavor ## _muxer_class = {\
     .version    = LIBAVUTIL_VERSION_INT,\
 };
 
-static int get_moov_size(AVFormatContext *s);
+//#define _BUILDEXPORTINTERNAL
+#ifdef _BUILDEXPORTINTERNAL
+#define _EXPORTINTERNALS_
+#else
+#define _EXPORTINTERNALS_ static
+#endif
 
-int mov_write_header(AVFormatContext *s);
-int mov_write_packet(AVFormatContext *s, AVPacket *pkt);
-int mov_write_trailer(AVFormatContext *s);
+
+//always
+_EXPORTINTERNALS_ int get_moov_size(AVFormatContext *s);
+
+#define _BUILDOVERRIDEEXPORTFUNC
+#ifdef _BUILDOVERRIDEEXPORTFUNC
+#define _EXPORTFUNC
+#else
+#define _EXPORTFUNC static
+#endif
+
+_EXPORTFUNC int mov_write_header(AVFormatContext *s);
+_EXPORTFUNC int mov_write_packet(AVFormatContext *s, AVPacket *pkt);
+_EXPORTFUNC int mov_write_trailer(AVFormatContext *s);
 void mov_set_flags(AVFormatContext *s, int flags);
 int mov_get_flags(AVFormatContext *s);
 void mov_set_sequence(AVFormatContext *s, int sequence);
@@ -109,6 +128,44 @@ void mov_set_track_duration(AVFormatContext *s, unsigned int track, uint64_t dur
 uint64_t mov_get_track_duration(AVFormatContext *s, unsigned int track);
 uint64_t mov_get_last_track_last_cluster_pts(AVFormatContext *s, unsigned int track);
 
+#ifdef _BUILDEXPORTINTERNAL
+int64_t update_size(AVIOContext *pb, int64_t pos);
+void put_descr(AVIOContext *pb, int tag, unsigned int size);
+int get_cluster_duration(MOVTrack *track, int cluster_idx);
+int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track);
+int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                         MOVTrack *track, AVStream *st);
+int mov_write_mvex_tag(AVIOContext *pb, MOVMuxContext *mov);
+int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov);
+int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
+                                         AVFormatContext *s);
+int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s);
+void build_chunks(MOVTrack *trk);
+int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov);
+int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov);
+uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry);
+int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track);
+int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks,
+                                           int size);
+int mov_write_sidx_tags(AVIOContext *pb, MOVMuxContext *mov,
+                                          int tracks, int ref_size);
+int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov);
+int mov_write_mdat_tag(AVIOContext *pb, MOVMuxContext *mov);
+void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s);
+int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track);
+int mov_write_subtitle_end_packet(AVFormatContext *s,
+                                                    int stream_index,
+                                                    int64_t dts);
+int mov_create_chapter_track(AVFormatContext *s, int tracknum);
+int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr);
+void enable_tracks(AVFormatContext *s);
+void mov_free(AVFormatContext *s);
+int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
+                                                               AVStream *st);
+int get_moov_size(AVFormatContext *s);
+int shift_data(AVFormatContext *s);
+void mov_write_stype(AVFormatContext *s);
+#endif
 
 static int utf8len(const uint8_t *b)
 {
@@ -122,7 +179,7 @@ static int utf8len(const uint8_t *b)
 }
 
 //FIXME support 64 bit variant with wide placeholders
-static int64_t update_size(AVIOContext *pb, int64_t pos)
+_EXPORTINTERNALS_ int64_t update_size(AVIOContext *pb, int64_t pos)
 {
     int64_t curpos = avio_tell(pb);
     avio_seek(pb, pos, SEEK_SET);
@@ -544,7 +601,7 @@ static int mov_write_enda_tag_be(AVIOContext *pb)
   return 10;
 }
 
-static void put_descr(AVIOContext *pb, int tag, unsigned int size)
+_EXPORTINTERNALS_ void put_descr(AVIOContext *pb, int tag, unsigned int size)
 {
     int i = 3;
     avio_w8(pb, tag);
@@ -867,7 +924,7 @@ static int mov_get_lpcm_flags(enum AVCodecID codec_id)
     }
 }
 
-static int get_cluster_duration(MOVTrack *track, int cluster_idx)
+_EXPORTINTERNALS_ int get_cluster_duration(MOVTrack *track, int cluster_idx)
 {
     int64_t next_dts;
 
@@ -1465,7 +1522,7 @@ static const AVCodecTag codec_f4v_tags[] = { // XXX: add GIF/PNG/JPEG?
     { AV_CODEC_ID_NONE, 0 },
 };
 
-static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
+_EXPORTINTERNALS_ int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag;
 
@@ -2633,7 +2690,7 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
-static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
+_EXPORTINTERNALS_ int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov,
                               MOVTrack *track, AVStream *st)
 {
     int64_t pos = avio_tell(pb);
@@ -2728,7 +2785,7 @@ static int mov_write_trex_tag(AVIOContext *pb, MOVTrack *track)
     return 0;
 }
 
-static int mov_write_mvex_tag(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_mvex_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
     int i;
@@ -2739,7 +2796,7 @@ static int mov_write_mvex_tag(AVIOContext *pb, MOVMuxContext *mov)
     return update_size(pb, pos);
 }
 
-static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     int max_track_id = 1, i;
     int64_t max_track_len = 0;
@@ -3086,7 +3143,7 @@ static int mov_write_chpl_tag(AVIOContext *pb, AVFormatContext *s)
     return update_size(pb, pos);
 }
 
-static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
+_EXPORTINTERNALS_ int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
     AVIOContext *pb_buf;
@@ -3154,7 +3211,7 @@ static void mov_write_psp_udta_tag(AVIOContext *pb,
     ascii_to_wc(pb, str);
 }
 
-static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
+_EXPORTINTERNALS_ int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
 {
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
     int64_t pos, pos2;
@@ -3192,7 +3249,7 @@ static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
     return 0;
 }
 
-static void build_chunks(MOVTrack *trk)
+_EXPORTINTERNALS_ void build_chunks(MOVTrack *trk)
 {
     int i;
     MOVIentry *chunk = &trk->cluster[0];
@@ -3313,7 +3370,7 @@ static void param_write_hex(AVIOContext *pb, const char *name, const uint8_t *va
     avio_printf(pb, "<param name=\"%s\" value=\"%s\" valuetype=\"data\"/>\n", name, buf);
 }
 
-static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
     int i;
@@ -3410,7 +3467,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
     return update_size(pb, pos);
 }
 
-static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     avio_wb32(pb, 16);
     ffio_wfourcc(pb, "mfhd");
@@ -3419,7 +3476,7 @@ static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
     return 0;
 }
 
-static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
+_EXPORTINTERNALS_ uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
 {
     return entry->flags & MOV_SYNC_SAMPLE ? MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO :
            (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
@@ -3543,7 +3600,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
     return update_size(pb, pos);
 }
 
-static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
+_EXPORTINTERNALS_ int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     static const uint8_t uuid[] = {
@@ -3613,7 +3670,7 @@ static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
-static int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks,
+_EXPORTINTERNALS_ int mov_add_tfra_entries(AVIOContext *pb, MOVMuxContext *mov, int tracks,
                                 int size)
 {
     int i;
@@ -3800,7 +3857,7 @@ static int mov_write_sidx_tag(AVIOContext *pb,
     return update_size(pb, pos);
 }
 
-static int mov_write_sidx_tags(AVIOContext *pb, MOVMuxContext *mov,
+_EXPORTINTERNALS_ int mov_write_sidx_tags(AVIOContext *pb, MOVMuxContext *mov,
                                int tracks, int ref_size)
 {
     int i, round, ret;
@@ -3880,7 +3937,7 @@ static int mov_write_tfra_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-static int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
     int i;
@@ -3906,7 +3963,7 @@ static int mov_write_mfra_tag(AVIOContext *pb, MOVMuxContext *mov)
     return update_size(pb, pos);
 }
 
-static int mov_write_mdat_tag(AVIOContext *pb, MOVMuxContext *mov)
+_EXPORTINTERNALS_ int mov_write_mdat_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
     avio_wb32(pb, 8);    // placeholder for extended size field (64 bit)
     ffio_wfourcc(pb, mov->mode == MODE_MOV ? "wide" : "free");
@@ -4006,7 +4063,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
     return update_size(pb, pos);
 }
 
-static void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
+_EXPORTINTERNALS_ void mov_write_uuidprof_tag(AVIOContext *pb, AVFormatContext *s)
 {
     AVStream       *video_st    = s->streams[0];
     AVCodecContext *video_codec = s->streams[0]->codec;
@@ -4177,7 +4234,7 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk)
     }
 }
 
-static int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track)
+_EXPORTINTERNALS_ int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track)
 {
     MOVMuxContext *mov = s->priv_data;
     int ret, buf_size;
@@ -4598,6 +4655,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
          * its duration instead. */
         if ( mov->flags & FF_MOV_FLAG_DASH_MEDIASEGMENT){
             trk->start_dts = pkt->dts;
+            trk->frag_start = pkt->pts;
         } else{
             trk->cluster[trk->entry].dts = trk->start_dts = 0;
         }
@@ -4728,7 +4786,7 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
         return ff_mov_write_packet(s, pkt);
 }
 
-static int mov_write_subtitle_end_packet(AVFormatContext *s,
+_EXPORTINTERNALS_ int mov_write_subtitle_end_packet(AVFormatContext *s,
                                          int stream_index,
                                          int64_t dts) {
     AVPacket end;
@@ -4749,7 +4807,7 @@ static int mov_write_subtitle_end_packet(AVFormatContext *s,
     return ret;
 }
 
-int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
+_EXPORTFUNC int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if (!pkt) {
         mov_flush_fragment(s, 1);
@@ -4799,7 +4857,7 @@ int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 // QuickTime chapters involve an additional text track with the chapter names
 // as samples, and a tref pointing from the other tracks to the chapter one.
-static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
+_EXPORTINTERNALS_ int mov_create_chapter_track(AVFormatContext *s, int tracknum)
 {
     AVIOContext *pb;
 
@@ -4896,7 +4954,7 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     return 0;
 }
 
-static int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
+_EXPORTINTERNALS_ int mov_create_timecode_track(AVFormatContext *s, int index, int src_index, const char *tcstr)
 {
     int ret;
     MOVMuxContext *mov  = s->priv_data;
@@ -4940,7 +4998,7 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     return ret;
 }
 
-static void mov_write_stype(AVFormatContext *s)
+_EXPORTINTERNALS_ void mov_write_stype(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     unsigned int size = 8 + 8 + 4;
@@ -5000,7 +5058,7 @@ void mov_set_sequence(AVFormatContext *s, int sequence){
  * if no subtitle is enabled, the subtitle menu in QuickTime will be
  * empty!
  */
-static void enable_tracks(AVFormatContext *s)
+_EXPORTINTERNALS_ void enable_tracks(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     int i;
@@ -5041,7 +5099,7 @@ static void enable_tracks(AVFormatContext *s)
     }
 }
 
-static void mov_free(AVFormatContext *s)
+_EXPORTINTERNALS_ void mov_free(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     int i;
@@ -5085,7 +5143,7 @@ static uint32_t rgb_to_yuv(uint32_t rgb)
     return (y << 16) | (cr << 8) | cb;
 }
 
-static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
+_EXPORTINTERNALS_ int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
                                                     AVStream *st)
 {
     int i, width = 720, height = 480;
@@ -5144,7 +5202,7 @@ void mov_set_flags(AVFormatContext *s, int flags){
     mov->flags = flags;
 }
 
-int mov_write_header(AVFormatContext *s)
+_EXPORTFUNC int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
@@ -5560,7 +5618,7 @@ int mov_write_header(AVFormatContext *s)
     return ret;
 }
 
-static int get_moov_size(AVFormatContext *s)
+_EXPORTINTERNALS_ int get_moov_size(AVFormatContext *s)
 {
     int ret;
     AVIOContext *moov_buf;
@@ -5631,7 +5689,7 @@ static int compute_sidx_size(AVFormatContext *s)
     return sidx_size;
 }
 
-static int shift_data(AVFormatContext *s)
+_EXPORTINTERNALS_ int shift_data(AVFormatContext *s)
 {
     int ret = 0, moov_size;
     MOVMuxContext *mov = s->priv_data;
@@ -5697,7 +5755,7 @@ end:
     return ret;
 }
 
-int mov_write_trailer(AVFormatContext *s)
+_EXPORTFUNC int mov_write_trailer(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
