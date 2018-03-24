@@ -3657,15 +3657,20 @@ static int mov_write_tfdt_tag(MOVMuxContext *mov,AVIOContext *pb, MOVTrack *trac
 {
     int64_t pos = avio_tell(pb);
 
-    avio_wb32(pb, 0); /* size */
-    ffio_wfourcc(pb, "tfdt");
     if (mov->flags & FF_MOV_FLAG_DASH_MEDIASEGMENT){
-        avio_w8(pb, 0); /* version */
-    }else{
-        avio_w8(pb, 1); /* version */
+        avio_wb32(pb, 16); //4
+        ffio_wfourcc(pb, "tfdt"); //4
+        avio_w8(pb, 0); //version //1
+        avio_wb24(pb, 0); //flags //3
+        avio_wb32(pb, (uint32_t)track->frag_start); //4
     }
-    avio_wb24(pb, 0);
-    avio_wb64(pb, track->frag_start);
+    else {
+        avio_wb32(pb, 0); /* size */
+        ffio_wfourcc(pb, "tfdt");
+        avio_w8(pb, 1); /* version */
+        avio_wb24(pb, 0);
+        avio_wb64(pb, track->frag_start);
+    }
     return update_size(pb, pos);
 }
 
