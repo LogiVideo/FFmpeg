@@ -4318,7 +4318,7 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         if ((ret = mov_write_moov_tag(s->pb, mov, s)) < 0)
             return ret;
 
-        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV) {
+        if (mov->flags & FF_MOV_FLAG_DELAY_MOOV|| mov->flags & FF_MOV_FLAG_DASH_INITSEGMENT) {
             if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
                 mov->reserved_header_pos = avio_tell(s->pb);
             avio_flush(s->pb);
@@ -5215,12 +5215,13 @@ _EXPORTFUNC int mov_write_header(AVFormatContext *s)
     mov->mode = MODE_MP4;
 
     if (mov->flags & FF_MOV_FLAG_DASH_MEDIASEGMENT){
-        mov->flags |= FF_MOV_FLAG_DASH;
+        mov->flags |= (FF_MOV_FLAG_DASH|FF_MOV_FLAG_FRAGMENT);
         mov_write_stype(s);
     }
     
     if (mov->flags & FF_MOV_FLAG_DASH_INITSEGMENT){
         mov->iods_skip = 0;
+        mov->flags |= FF_MOV_FLAG_FRAGMENT;
     }
     
     if (s->oformat) {
