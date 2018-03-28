@@ -3330,8 +3330,6 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (mov->mode != MODE_MOV && !mov->iods_skip)
         mov_write_iods_tag(pb, mov);
     
-    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
-        mov_write_mvex_tag(pb, mov); /* QuickTime requires trak to precede this */
 
     for (i = 0; i < mov->nb_streams; i++) {
         if (mov->tracks[i].entry > 0 || mov->flags & FF_MOV_FLAG_FRAGMENT) {
@@ -3340,6 +3338,9 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
                 return ret;
         }
     }
+
+    if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        mov_write_mvex_tag(pb, mov); /* QuickTime requires trak to precede this */
 
     if (mov->mode == MODE_PSP)
         mov_write_uuidusmt_tag(pb, s);
@@ -5220,7 +5221,7 @@ _EXPORTFUNC int mov_write_header(AVFormatContext *s)
     }
     
     if (mov->flags & FF_MOV_FLAG_DASH_INITSEGMENT){
-        mov->iods_skip = 0;
+        mov->iods_skip = 1;
         mov->flags |= FF_MOV_FLAG_FRAGMENT;
     }
     
