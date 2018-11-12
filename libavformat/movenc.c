@@ -938,6 +938,9 @@ _EXPORTINTERNALS_ int get_cluster_duration(MOVTrack *track, int cluster_idx)
 
     next_dts -= track->cluster[cluster_idx].dts;
 
+    if ( next_dts < 0 || next_dts > INT_MAX){
+        return 0;
+    }
     av_assert0(next_dts >= 0);
     av_assert0(next_dts <= INT_MAX);
 
