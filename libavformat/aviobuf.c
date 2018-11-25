@@ -1131,7 +1131,7 @@ static int64_t dyn_buf_seek(void *opaque, int64_t offset, int whence)
     return 0;
 }
 
-static int url_open_dyn_buf_internal_special(AVIOContext **s, int max_packet_size, int initial_size)
+int url_open_dyn_buf_internal_special(AVIOContext **s, int max_packet_size, int initial_size)
 {
     DynBuffer *d;
     unsigned io_buffer_size = max_packet_size ? max_packet_size : initial_size;
