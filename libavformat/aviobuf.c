@@ -1131,6 +1131,29 @@ static int64_t dyn_buf_seek(void *opaque, int64_t offset, int whence)
     return 0;
 }
 
+static int url_open_dyn_buf_internal_special(AVIOContext **s, int max_packet_size, int initial_size)
+{
+    DynBuffer *d;
+    unsigned io_buffer_size = max_packet_size ? max_packet_size : initial_size;
+    
+    if (sizeof(DynBuffer) + io_buffer_size < io_buffer_size)
+        return -1;
+    d = av_mallocz(sizeof(DynBuffer) + io_buffer_size);
+    if (!d)
+        return AVERROR(ENOMEM);
+    d->io_buffer_size = io_buffer_size;
+    *s = avio_alloc_context(d->io_buffer, d->io_buffer_size, 1, d, NULL,
+                            max_packet_size ? dyn_packet_buf_write : dyn_buf_write,
+                            max_packet_size ? NULL : dyn_buf_seek);
+    if(!*s) {
+        av_free(d);
+        return AVERROR(ENOMEM);
+    }
+    (*s)->max_packet_size = max_packet_size;
+    return 0;
+}
+
+
 static int url_open_dyn_buf_internal(AVIOContext **s, int max_packet_size)
 {
     DynBuffer *d;
