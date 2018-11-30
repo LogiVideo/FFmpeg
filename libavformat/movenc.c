@@ -4453,6 +4453,7 @@ static int mov_auto_flush_fragment(AVFormatContext *s, int force)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    av_log(s, AV_LOG_ERROR,"LOGI-ff_mov_write_packet");
     MOVMuxContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
@@ -4526,6 +4527,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (trk->vos_len == 0 && enc->extradata_size > 0 &&
         !TAG_IS_AVCI(trk->tag) &&
         (enc->codec_id != AV_CODEC_ID_DNXHD)) {
+        av_log(s, AV_LOG_ERROR,"LOGI-memcpy(trk->vos_data, enc->extradata, trk->vos_len");
         trk->vos_len  = enc->extradata_size;
         trk->vos_data = av_malloc(trk->vos_len);
         if (!trk->vos_data) {
@@ -4547,7 +4549,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
         
-        av_log(s, AV_LOG_ERROR,"inside !AVCI data?");
+        av_log(s, AV_LOG_ERROR,"LOGI-inside !AVCI data?");
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
@@ -4596,6 +4598,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 goto err;
             }
         } else {
+            av_log(s, AV_LOG_ERROR,"LOGI-avio_write(pb, pkt->data, size)");
             avio_write(pb, pkt->data, size);
         }
     }
