@@ -4546,6 +4546,8 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
     if (enc->codec_id == AV_CODEC_ID_H264 && trk->vos_len > 0 && *(uint8_t *)trk->vos_data != 1 && !TAG_IS_AVCI(trk->tag)) {
+        
+        av_log(s, AV_LOG_ERROR,"inside !AVCI data?");
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
         if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
